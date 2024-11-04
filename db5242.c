@@ -100,7 +100,23 @@ inline int64_t low_bin_nb_arithmetic(int64_t* data, int64_t size, int64_t target
 
   while(left<right) {
 
-    /* YOUR CODE HERE */
+    __m256i left1 = _mm256_set1_epi64x(left);
+    __m256i right1 = _mm256_set1_epi64x(right);
+
+    __m256i mid1 = _mm256_add_epi64(left1,right1);
+    mid1 = _mm256_srli_epi64(mid1,1);
+    __m256i midval = _mm256_i64gather_epi64((const long long int*) data,mid1,8);
+    
+    __m256i target1 = _mm256_set1_epi64x(target);
+    
+    __m256i greater = _mm256_cmpgt_epi64(midval,target1);
+    __m256i equal = _mm256_cmpeq_epi64(midval,target1);
+    
+    if (_mm256_movemask_epi8(_mm256_or_si256(greater,equal))) {
+      right = mid;
+    } else {
+      left = mid+1;
+    }
 
   }
   return right;
