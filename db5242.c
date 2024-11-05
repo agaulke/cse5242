@@ -11,11 +11,11 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <asm/unistd.h>
+#include <unistd.h>
 #include <immintrin.h>
 
 /* uncomment out the following DEBUG line for debug info, for experiment comment the DEBUG line  */
-// #define DEBUG
+#define DEBUG
 
 /* compare two int64_t values - for use with qsort */
 static int compare(const void *p1, const void *p2)
@@ -101,6 +101,17 @@ inline int64_t low_bin_nb_arithmetic(int64_t* data, int64_t size, int64_t target
   while(left<right) {
 
     /* YOUR CODE HERE */
+
+    // In C, (data[mid]>=target) returns 0 if false and 1 if true.
+    // We can use multiplication based on this value to avoid if statements.
+
+    mid = (left + right) / 2;
+    
+    // right=right if data[mid]<target, and right=mid otherwise
+    right = (right * (data[mid]<target)) + (mid * (data[mid]>=target));
+
+    // left=left if data[mid]>=target, and left=mid+1 otherwise.
+    left = (left * (data[mid>=target])) + ( (mid+1) * (data[mid]<target));
 
   }
   return right;
@@ -217,12 +228,13 @@ void bulk_bin_search(int64_t* data, int64_t size, int64_t* searchkeys, int64_t n
 #endif
 
       // Uncomment one of the following to measure it
-      results[i] = low_bin_search(data,size,searchkeys[i]);
-      //results[i] = low_bin_nb_arithmetic(data,size,searchkeys[i]);
+      //results[i] = low_bin_search(data,size,searchkeys[i]);
+      results[i] = low_bin_nb_arithmetic(data,size,searchkeys[i]);
       //results[i] = low_bin_nb_mask(data,size,searchkeys[i]);
 
 #ifdef DEBUG
       printf("Result is %ld\n",results[i]);
+      printf("Value is %ld\n",data[results[i]]);
 #endif
     }
   }
