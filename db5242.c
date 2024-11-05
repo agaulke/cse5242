@@ -15,7 +15,7 @@
 #include <immintrin.h>
 
 /* uncomment out the following DEBUG line for debug info, for experiment comment the DEBUG line  */
-// #define DEBUG
+#define DEBUG
 
 /* compare two int64_t values - for use with qsort */
 static int compare(const void *p1, const void *p2)
@@ -98,26 +98,11 @@ inline int64_t low_bin_nb_arithmetic(int64_t* data, int64_t size, int64_t target
   int64_t right=size;
   int64_t mid;
 
+
   while(left<right) {
-
-    __m256i left1 = _mm256_set1_epi64x(left);
-    __m256i right1 = _mm256_set1_epi64x(right);
-
-    __m256i mid1 = _mm256_add_epi64(left1,right1);
-    mid1 = _mm256_srli_epi64(mid1,1);
-    __m256i midval = _mm256_i64gather_epi64((const long long int*) data,mid1,8);
-    
-    __m256i target1 = _mm256_set1_epi64x(target);
-    
-    __m256i greater = _mm256_cmpgt_epi64(midval,target1);
-    __m256i equal = _mm256_cmpeq_epi64(midval,target1);
-    
-    if (_mm256_movemask_epi8(_mm256_or_si256(greater,equal))) {
-      right = mid;
-    } else {
-      left = mid+1;
-    }
-
+    mid = (left + right) >> 1;
+    right = (data[mid]>=target) * mid + (data[mid]<target) * right;
+    left = (data[mid]<target) * (mid+1) + (data[mid]>=target) * left; 
   }
   return right;
 }
@@ -134,9 +119,15 @@ inline int64_t low_bin_nb_mask(int64_t* data, int64_t size, int64_t target)
   */
   int64_t left=0;
   int64_t right=size;
+  int64_t mid;
 
-
-  /* YOUR CODE HERE */
+  while(left<right){
+    mid = (left + right) >> 1;
+    int64_t GE = -((data[mid] >= target));
+    int64_t LT = -((data[mid] < target));
+    right = (mid & GE) | (right & LT);
+    left = ((mid + 1) & LT) | (left & GE);
+  }
 
 
   return right;
@@ -157,7 +148,7 @@ inline void low_bin_nb_4x(int64_t* data, int64_t size, int64_t* targets, int64_t
   */
 
     /* YOUR CODE HERE */
-
+	int x = 2;
 
 }
 
@@ -460,5 +451,4 @@ main(int argc, char *argv[])
 	   printf("\n");
 #endif
 
-}
 
