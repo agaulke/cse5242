@@ -11,10 +11,11 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <asm/unistd.h>
+#include <unistd.h>
 #include <immintrin.h>
 
 /* uncomment out the following DEBUG line for debug info, for experiment comment the DEBUG line  */
+#define DEBUG
 #define DEBUG
 
 /* compare two int64_t values - for use with qsort */
@@ -244,12 +245,13 @@ void bulk_bin_search(int64_t* data, int64_t size, int64_t* searchkeys, int64_t n
 #endif
 
       // Uncomment one of the following to measure it
-      results[i] = low_bin_search(data,size,searchkeys[i]);
-      //results[i] = low_bin_nb_arithmetic(data,size,searchkeys[i]);
+      //results[i] = low_bin_search(data,size,searchkeys[i]);
+      results[i] = low_bin_nb_arithmetic(data,size,searchkeys[i]);
       //results[i] = low_bin_nb_mask(data,size,searchkeys[i]);
 
 #ifdef DEBUG
       printf("Result is %ld\n",results[i]);
+      printf("Value is %ld\n",data[results[i]]);
 #endif
     }
   }
