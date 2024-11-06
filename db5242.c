@@ -212,18 +212,19 @@ inline void low_bin_nb_simd(int64_t* data, int64_t size, __m256i target, __m256i
   */
 
 
-  __m256i left = _mm256_setzero_si256();
+   __m256i left = _mm256_setzero_si256();
   __m256i right = _mm256_set1_epi64x(size);
   __m256i mid, GE, LT;
-  while(_mm256_movemask_epi8(_mm256_cmpgt_epi64(left,right))!=0xFFFF){ // compare each 64-bit element in left and right like an array
+  while(_mm256_movemask_epi8(_mm256_cmpgt_epi64(right,left))!= 0){ // compare each 64-bit element in left and right until all left >= right
     mid = _mm256_srli_epi64(_mm256_add_epi64(left,right),1); // mid = (left + right) >> 1;
-    __m256i greater = _mm256_cmpgt_epi64(_mm256_i64gather_epi64(data,mid,8),target); // GE = (data[mid] > target);
-    __m256i equal = _mm256_cmpeq_epi64(_mm256_i64gather_epi64(data,mid,8),target); // EQ = (data[mid] == target);
+    __m256i greater = _mm256_cmpgt_epi64(_mm256_i64gather_epi64((const long long int *)data,mid,8),target); // GE = (data[mid] > target);
+    __m256i equal = _mm256_cmpeq_epi64(_mm256_i64gather_epi64((const long long int *)data,mid,8),target); // EQ = (data[mid] == target);
     GE = _mm256_or_si256(greater,equal); // GE = GE | EQ;
     LT = _mm256_xor_si256(GE,_mm256_set1_epi64x(-1)); // LT = ~GE;
     right = _mm256_or_si256(_mm256_and_si256(mid,GE),_mm256_and_si256(right,LT)); // right = (mid & GE) | (right & LT);
     left = _mm256_or_si256(_mm256_and_si256(_mm256_add_epi64(mid,_mm256_set1_epi64x(1)),LT),_mm256_and_si256(left,GE)); // left = ((mid + 1) & LT) | (left & GE);
   }
+
 
 
 
