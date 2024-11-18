@@ -315,8 +315,66 @@ int64_t band_join(int64_t* inner, int64_t inner_size, int64_t* outer, int64_t ou
 
   */
 
-      /* YOUR CODE HERE */
+  /* YOUR CODE HERE */
 
+  int64_t current_index = 0;
+  int64_t extra_searches = outer_size % 4;  // Search all values of outer array using low_bin_nb_4x until less than 4 searches remain
+
+  for (int64_t i = 0; i < (outer_size - extra_searches); i+=4) {
+    // use 4x search here
+    // printf("i = %d\n", i);
+    int64_t results[4] = {inner_size, inner_size, inner_size, inner_size};
+    low_bin_nb_4x(inner, inner_size, &outer[i], &results[0]);
+    // returns indices in results s.t. outer[i] <= inner[results[0]], outer[i+1] <= inner[results[1]], ...
+
+    
+    for (int j = 0; j < 4; j++) {
+      int64_t left = results[j] - 1;
+      int64_t right = results[j];
+      // Should we expand the whiles to do all 4 elements at a time? Not sure it would be faster...
+      while ( (outer[i+j] - bound < inner[left]) && (left >= 0) && (current_index < result_size)) {
+        // first go left until outer[i] - bound > inner[left]
+        // printf("evaluating left index %ld\n", left);
+        // printf("current index = %ld\n", current_index);
+        inner_results[current_index] = left--;
+        outer_results[current_index] = i+j;
+        current_index++;
+      }
+
+      while ( (outer[i+j] + bound > inner[right]) && (right < inner_size) && (current_index < result_size)) {
+        // now go right until outer[i] + bound < inner[right]
+        // printf("evaluating right index %ld\n", right);
+        // printf("current index = %ld\n", current_index);
+        // printf("result_size = %ld\n", result_size);
+        inner_results[current_index] = right++;
+        outer_results[current_index] = i+j;
+        current_index++;
+        
+      }
+
+    }
+    
+    if (current_index >= result_size) break;
+  }
+
+  for (int64_t i = outer_size - extra_searches; i < outer_size; i++) {
+    // printf("Entering cleanup, current_index=%ld\n", current_index);
+    if (current_index >= result_size) break;
+    // use mask search here
+    int64_t right = low_bin_nb_mask(inner, inner_size, outer[i]);
+    int64_t left = right - 1;
+    while ( (outer[i] - bound < inner[left]) && (left >= 0) && (current_index < result_size)) {
+      // first go left until outer[i] - bound > inner[left]
+      inner_results[current_index] = left--;
+      outer_results[current_index++] = i;
+    }
+    while ( (outer[i] + bound > inner[right]) && (right < inner_size) && (current_index < result_size)) {
+      // now go right until outer[i] + bound < inner[right]
+      inner_results[current_index] = right++;
+      outer_results[current_index++] = i;
+    }
+  }
+  return current_index;
 }
 
 int64_t band_join_simd(int64_t* inner, int64_t inner_size, int64_t* outer, int64_t outer_size, int64_t* inner_results, int64_t* outer_results, int64_t result_size, int64_t bound)
@@ -471,7 +529,10 @@ main(int argc, char *argv[])
 	   /* show the band_join results */
 	   printf("band_join results: ");
 	   for(int64_t i=0;i<total_results;i++) printf("(%ld,%ld) ",outer_results[i],inner_results[i]);
+     printf("\nresult values:\n");
+     for(int64_t i=0;i<total_results;i++) printf("(%ld,%ld) ",outer[outer_results[i]],data[inner_results[i]]);
 	   printf("\n");
 #endif
 
 
+}
