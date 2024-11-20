@@ -225,9 +225,7 @@ inline void low_bin_nb_simd(int64_t* data, int64_t size, __m256i target, __m256i
     left = _mm256_or_si256(_mm256_and_si256(_mm256_add_epi64(mid,_mm256_set1_epi64x(1)),LT),_mm256_and_si256(left,GE)); // left = ((mid + 1) & LT) | (left & GE);
   }
 
-
-
-
+  *result = right;
 }
 
 void bulk_bin_search(int64_t* data, int64_t size, int64_t* searchkeys, int64_t numsearches, int64_t* results, int repeats)
