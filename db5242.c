@@ -102,8 +102,9 @@ inline int64_t low_bin_nb_arithmetic(int64_t* data, int64_t size, int64_t target
 
   while(left<right) {
     mid = (left + right) >> 1;
-    right = (data[mid]>=target) * mid + (data[mid]<target) * right;
-    left = (data[mid]<target) * (mid+1) + (data[mid]>=target) * left; 
+    int64_t midVal = data[mid];
+    right = (midVal>=target) * mid + (midVal<target) * right;
+    left = (midVal<target) * (mid+1) + (midVal>=target) * left;
   }
   return right;
 }
@@ -124,8 +125,9 @@ inline int64_t low_bin_nb_mask(int64_t* data, int64_t size, int64_t target)
 
   while(left<right){
     mid = (left + right) >> 1;
-    int64_t GE = -((data[mid] >= target));
-    int64_t LT = -((data[mid] < target));
+    int64_t midVal = data[mid];
+    int64_t GE = -((midVal >= target));
+    int64_t LT = -((midVal < target));
     right = (mid & GE) | (right & LT);
     left = ((mid + 1) & LT) | (left & GE);
   }
