@@ -218,6 +218,7 @@ inline void low_bin_nb_simd(int64_t* data, int64_t size, __m256i target, __m256i
   __m256i right = _mm256_set1_epi64x(size);
   __m256i mid, GE, LT;
   while(_mm256_movemask_epi8(_mm256_cmpgt_epi64(right,left))!= 0){ // compare each 64-bit element in left and right until all left >= right
+    // printf("in while...\n");
     mid = _mm256_srli_epi64(_mm256_add_epi64(left,right),1); // mid = (left + right) >> 1;
     __m256i greater = _mm256_cmpgt_epi64(_mm256_i64gather_epi64((const long long int *)data,mid,8),target); // GE = (data[mid] > target);
     __m256i equal = _mm256_cmpeq_epi64(_mm256_i64gather_epi64((const long long int *)data,mid,8),target); // EQ = (data[mid] == target);
@@ -280,15 +281,17 @@ void bulk_bin_search_4x(int64_t* data, int64_t size, int64_t* searchkeys, int64_
       // Uncomment one of the following depending on which routine you want to profile
 
       // Algorithm A
-       low_bin_nb_4x(data,size,&searchkeys[i],&results[i]);
+      // low_bin_nb_4x(data,size,&searchkeys[i],&results[i]);
 
       // Algorithm B
-      // searchkey_4x = _mm256_loadu_si256((__m256i *)&searchkeys[i]);
-      // low_bin_nb_simd(data,size,searchkey_4x,(__m256i *)&results[i]);
+      searchkey_4x = _mm256_loadu_si256((__m256i *)&searchkeys[i]);
+      low_bin_nb_simd(data,size,searchkey_4x,(__m256i *)&results[i]);
 
 #ifdef DEBUG
       printf("Result is %ld %ld %ld %ld  ...\n",
 	     results[i],results[i+1],results[i+2],results[i+3]);
+      printf("Values are %ld %ld %ld %ld  ...\n",
+	     data[results[i]],data[results[i+1]],data[results[i+2]],data[results[i+3]]);
 #endif
     }
     /* a little bit more work if numsearches is not a multiple of 8 */
@@ -322,11 +325,9 @@ int64_t band_join(int64_t* inner, int64_t inner_size, int64_t* outer, int64_t ou
 
   for (int64_t i = 0; i < (outer_size - extra_searches); i+=4) {
     // use 4x search here
-    // printf("i = %d\n", i);
     int64_t results[4] = {inner_size, inner_size, inner_size, inner_size};
     low_bin_nb_4x(inner, inner_size, &outer[i], &results[0]);
     // returns indices in results s.t. outer[i] <= inner[results[0]], outer[i+1] <= inner[results[1]], ...
-
     
     for (int j = 0; j < 4; j++) {
       int64_t left = results[j] - 1;
@@ -334,8 +335,6 @@ int64_t band_join(int64_t* inner, int64_t inner_size, int64_t* outer, int64_t ou
       // Should we expand the whiles to do all 4 elements at a time? Not sure it would be faster...
       while ( (outer[i+j] - bound < inner[left]) && (left >= 0) && (current_index < result_size)) {
         // first go left until outer[i] - bound > inner[left]
-        // printf("evaluating left index %ld\n", left);
-        // printf("current index = %ld\n", current_index);
         inner_results[current_index] = left--;
         outer_results[current_index] = i+j;
         current_index++;
@@ -343,9 +342,6 @@ int64_t band_join(int64_t* inner, int64_t inner_size, int64_t* outer, int64_t ou
 
       while ( (outer[i+j] + bound > inner[right]) && (right < inner_size) && (current_index < result_size)) {
         // now go right until outer[i] + bound < inner[right]
-        // printf("evaluating right index %ld\n", right);
-        // printf("current index = %ld\n", current_index);
-        // printf("result_size = %ld\n", result_size);
         inner_results[current_index] = right++;
         outer_results[current_index] = i+j;
         current_index++;
@@ -397,6 +393,72 @@ int64_t band_join_simd(int64_t* inner, int64_t inner_size, int64_t* outer, int64
   */
 
       /* YOUR CODE HERE */
+
+  int64_t current_index = 0;
+  int64_t extra_searches = outer_size % 4;  // Search all values of outer array using low_bin_nb_4x until less than 4 searches remain
+  register __m256i searchkeys;
+
+  for (int64_t i = 0; i < (outer_size - extra_searches); i+=4) {
+    // use SIMD search here
+    int64_t results[4] = {5,5,5,5};// {inner_size, inner_size, inner_size, inner_size};
+
+    // Load 4 outer keys into vector for SIMD search.
+    searchkeys = _mm256_loadu_si256((__m256i *)&outer[i]);
+    low_bin_nb_simd(inner, inner_size, searchkeys, (__m256i *)&results[0]);
+    // returns indices in results s.t. outer[i] <= inner[results[0]], outer[i+1] <= inner[results[1]], ...
+
+    #ifdef DEBUG
+      printf("Result is %ld %ld %ld %ld  ...\n",
+        results[0],results[1],results[2],results[3]);
+      printf("Values are %ld %ld %ld %ld  ...\n",
+        inner[results[0]],inner[results[1]],inner[results[2]],inner[results[3]]);
+    #endif
+
+    // Iterate through the returned values.  Complexity = O(S1+S2+S3+S4)
+    for (int j = 0; j < 4; j++) {
+      int64_t left = results[j] - 1;
+      int64_t right = results[j];
+      // Scan through the adjacent values to find all entries that fall within the bound.
+      while ( (outer[i+j] - bound < inner[left]) && (left >= 0) && (current_index < result_size)) {
+        // first go left until outer[i] - bound > inner[left]
+        inner_results[current_index] = left--;
+        outer_results[current_index] = i+j;
+        current_index++;
+      }
+
+      while ( (outer[i+j] + bound > inner[right]) && (right < inner_size) && (current_index < result_size)) {
+        // now go right until outer[i] + bound < inner[right]
+        inner_results[current_index] = right++;
+        outer_results[current_index] = i+j;
+        current_index++;
+        
+      }
+
+    }
+    // If we've hit the max result size, quit.
+    if (current_index >= result_size) break;
+  }
+
+  // Do some extra searches if not perfectly divisible by 4.
+  for (int64_t i = outer_size - extra_searches; i < outer_size; i++) {
+    if (current_index >= result_size) break;
+    // use mask search here
+    int64_t right = low_bin_nb_mask(inner, inner_size, outer[i]);
+    int64_t left = right - 1;
+    
+    // Scan through the adjacent values to find all entries that fall within the bound.
+    while ( (outer[i] - bound < inner[left]) && (left >= 0) && (current_index < result_size)) {
+      // first go left until outer[i] - bound > inner[left]
+      inner_results[current_index] = left--;
+      outer_results[current_index++] = i;
+    }
+    while ( (outer[i] + bound > inner[right]) && (right < inner_size) && (current_index < result_size)) {
+      // now go right until outer[i] + bound < inner[right]
+      inner_results[current_index] = right++;
+      outer_results[current_index++] = i;
+    }
+  }
+  return current_index;
 
 }
 
@@ -519,7 +581,8 @@ main(int argc, char *argv[])
 	   gettimeofday(&before,NULL);
 
 	   /* the code that you want to measure goes here; make a function call */
-	   total_results=band_join(data, arraysize, outer, outer_size, inner_results, outer_results, result_size, bound);
+	   //total_results=band_join(data, arraysize, outer, outer_size, inner_results, outer_results, result_size, bound);
+     total_results=band_join_simd(data, arraysize, outer, outer_size, inner_results, outer_results, result_size, bound);
 
 	   gettimeofday(&after,NULL);
 	   printf("Band join result size is %ld with an average of %f matches per output record\n",total_results, 1.0*total_results/(1.0+outer_results[total_results-1]));
