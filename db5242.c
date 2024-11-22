@@ -102,9 +102,9 @@ inline int64_t low_bin_nb_arithmetic(int64_t* data, int64_t size, int64_t target
 
   while(left<right) {
     mid = (left + right) >> 1;
-    int64_t midVal = data[mid];
-    right = (midVal>=target) * mid + (midVal<target) * right;
-    left = (midVal<target) * (mid+1) + (midVal>=target) * left;
+    int64_t GE = (data[mid] >= target);
+    right = (GE * mid) + (!GE * right);
+    left = (!GE * (mid+1)) + (GE * left);
   }
   return right;
 }
@@ -123,13 +123,11 @@ inline int64_t low_bin_nb_mask(int64_t* data, int64_t size, int64_t target)
   int64_t right=size;
   int64_t mid;
 
-  while(left<right){
+   while(left<right){
     mid = (left + right) >> 1;
-    int64_t midVal = data[mid];
-    int64_t GE = -((midVal >= target));
-    int64_t LT = -((midVal < target));
-    right = (mid & GE) | (right & LT);
-    left = ((mid + 1) & LT) | (left & GE);
+    int64_t GE = -(data[mid] >= target);
+    right = (mid & GE) | (right & ~GE);
+    left = ((mid + 1) & ~GE) | (left & GE);
   }
 
 
@@ -155,11 +153,9 @@ inline void low_bin_nb_4x(int64_t* data, int64_t size, int64_t* targets, int64_t
   while(left[0]<right[0] || left[1]<right[1] || left[2]<right[2] || left[3]<right[3]){
     for(int i=0; i<4; i++){
       mid[i] = (left[i] + right[i]) >> 1;
-      int64_t midVal = data[mid[i]];
-      int64_t GE = -((midVal >= targets[i]));
-      int64_t LT = -((midVal < targets[i]));
-      right[i] = (mid[i] & GE) | (right[i] & LT);
-      left[i] = ((mid[i] + 1) & LT) | (left[i] & GE);
+      int64_t GE = -((data[mid[i]] >= targets[i]));
+      right[i] = (mid[i] & GE) | (right[i] & ~GE);
+      left[i] = ((mid[i] + 1) & ~GE) | (left[i] & GE);
     }
   }
 
