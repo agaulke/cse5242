@@ -9,9 +9,10 @@ EXECUTABLE_PATH = "./db5242"
 
 # Range of values for command-line arguments
 N_VALUES = range(10, 10**7, 50000)  # Example values for the first argument
-R_VALUE = 7
-BULK_BIN_PATTERN = r"bulk_bin.*?(\d+)\s+microseconds\s+or\s+([\d\.]+)\s+microseconds per search"
-#BULK_BIN_SEARCH_4X_PATTERN = r"bulk_bin_search_4x.*?(\d+)\s+microseconds\s+or\s+([\d\.]+)\s+microseconds per search"
+N_EXPONENTS = range(1, 8)
+R_VALUE = 15
+# BULK_BIN_PATTERN = r"bulk_bin.*?(\d+)\s+microseconds\s+or\s+([\d\.]+)\s+microseconds per search"
+BULK_BIN_SEARCH_4X_PATTERN = r"bulk_bin_search_4x.*?(\d+)\s+microseconds\s+or\s+([\d\.]+)\s+microseconds per search"
 
 # Output CSV file
 CSV_FILE = "results.csv"
@@ -54,12 +55,13 @@ def main():
         #writer.writerow(["N","bulk_bin_search_4x"])
 
         # Loop through the values of the arguments
-        for n in tqdm(N_VALUES, desc="Processing", unit="iteration"):
+        for i in tqdm(N_EXPONENTS, desc="Processing", unit="iteration"):
+            n = 10**i
             # Run the C program with the arguments
             output = run_c_program(n)
             if output:
                 # Parse the output and write to the CSV file
-                bulk_bin_total, bulk_bin_per_search = extract_values(output, BULK_BIN_PATTERN)
+                bulk_bin_total, bulk_bin_per_search = extract_values(output, BULK_BIN_SEARCH_4X_PATTERN)
                 # Extract values for bulk_bin_search_4x
                 #bulk_bin_search_4x_total, bulk_bin_search_4x_per_search = extract_values(output, BULK_BIN_SEARCH_4X_PATTERN)
                 writer.writerow([n,bulk_bin_total, bulk_bin_per_search])

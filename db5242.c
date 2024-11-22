@@ -15,8 +15,7 @@
 #include <immintrin.h>
 
 /* uncomment out the following DEBUG line for debug info, for experiment comment the DEBUG line  */
-#define DEBUG
-#define DEBUG
+// #define DEBUG
 
 /* compare two int64_t values - for use with qsort */
 static int compare(const void *p1, const void *p2)
@@ -150,6 +149,10 @@ inline void low_bin_nb_4x(int64_t* data, int64_t size, int64_t* targets, int64_t
 
   int64_t left[4] = {0,0,0,0};
   int64_t mid[4];
+  for(int i=0; i<4; i++) {
+    right[i] = size;
+  }
+
   while(left[0]<right[0] || left[1]<right[1] || left[2]<right[2] || left[3]<right[3]){
     for(int i=0; i<4; i++){
       mid[i] = (left[i] + right[i]) >> 1;
@@ -246,8 +249,8 @@ void bulk_bin_search(int64_t* data, int64_t size, int64_t* searchkeys, int64_t n
 
       // Uncomment one of the following to measure it
       //results[i] = low_bin_search(data,size,searchkeys[i]);
-      results[i] = low_bin_nb_arithmetic(data,size,searchkeys[i]);
-      //results[i] = low_bin_nb_mask(data,size,searchkeys[i]);
+      //results[i] = low_bin_nb_arithmetic(data,size,searchkeys[i]);
+      results[i] = low_bin_nb_mask(data,size,searchkeys[i]);
 
 #ifdef DEBUG
       printf("Result is %ld\n",results[i]);
@@ -560,7 +563,7 @@ main(int argc, char *argv[])
 	   gettimeofday(&before,NULL);
 
 	   /* the code that you want to measure goes here; make a function call */
-	   bulk_bin_search(data,arraysize,queries,arraysize,results, repeats);
+	   //bulk_bin_search(data,arraysize,queries,arraysize,results, repeats);
 
 	   gettimeofday(&after,NULL);
 	   printf("Time in bulk_bin_search loop is %ld microseconds or %f microseconds per search\n", (after.tv_sec-before.tv_sec)*1000000+(after.tv_usec-before.tv_usec), 1.0*((after.tv_sec-before.tv_sec)*1000000+(after.tv_usec-before.tv_usec))/arraysize/repeats);
