@@ -102,8 +102,9 @@ inline int64_t low_bin_nb_arithmetic(int64_t* data, int64_t size, int64_t target
   while(left<right) {
     mid = (left + right) >> 1;
     int64_t GE = (data[mid] >= target);
-    right = (GE * mid) + (!GE * right);
-    left = (!GE * (mid+1)) + (GE * left);
+    int64_t LT = !GE;
+    right = (GE * mid) + (LT * right);
+    left = (LT * (mid+1)) + (GE * left);
   }
   return right;
 }
@@ -125,8 +126,9 @@ inline int64_t low_bin_nb_mask(int64_t* data, int64_t size, int64_t target)
    while(left<right){
     mid = (left + right) >> 1;
     int64_t GE = -(data[mid] >= target);
-    right = (mid & GE) | (right & ~GE);
-    left = ((mid + 1) & ~GE) | (left & GE);
+    int64_t LT = ~GE;
+    right = (mid & GE) | (right & LT);
+    left = ((mid + 1) & LT) | (left & GE);
   }
 
 
@@ -157,8 +159,9 @@ inline void low_bin_nb_4x(int64_t* data, int64_t size, int64_t* targets, int64_t
     for(int i=0; i<4; i++){
       mid[i] = (left[i] + right[i]) >> 1;
       int64_t GE = -((data[mid[i]] >= targets[i]));
-      right[i] = (mid[i] & GE) | (right[i] & ~GE);
-      left[i] = ((mid[i] + 1) & ~GE) | (left[i] & GE);
+      int64_t LT = ~GE;
+      right[i] = (mid[i] & GE) | (right[i] & LT);
+      left[i] = ((mid[i] + 1) & LT) | (left[i] & GE);
     }
   }
 
@@ -218,7 +221,6 @@ inline void low_bin_nb_simd(int64_t* data, int64_t size, __m256i target, __m256i
   __m256i right = _mm256_set1_epi64x(size);
   __m256i mid, GE, LT;
   while(_mm256_movemask_epi8(_mm256_cmpgt_epi64(right,left))!= 0){ // compare each 64-bit element in left and right until all left >= right
-    // printf("in while...\n");
     mid = _mm256_srli_epi64(_mm256_add_epi64(left,right),1); // mid = (left + right) >> 1;
     __m256i midVal = _mm256_i64gather_epi64((const long long int *)data,mid,8); // midVal = data[mid];
     __m256i greater = _mm256_cmpgt_epi64(midVal,target); // GE = (midVal > target);
