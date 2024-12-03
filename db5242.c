@@ -573,7 +573,7 @@ main(int argc, char *argv[])
 	   gettimeofday(&before,NULL);
 
 	   /* the code that you want to measure goes here; make a function call */
-	   bulk_bin_search_4x(data,arraysize,queries,arraysize,results, repeats);
+	   //bulk_bin_search_4x(data,arraysize,queries,arraysize,results, repeats);
 
 	   gettimeofday(&after,NULL);
 	   printf("Time in bulk_bin_search_4x loop is %ld microseconds or %f microseconds per search\n", (after.tv_sec-before.tv_sec)*1000000+(after.tv_usec-before.tv_usec), 1.0*((after.tv_sec-before.tv_sec)*1000000+(after.tv_usec-before.tv_usec))/arraysize/repeats);
@@ -582,7 +582,7 @@ main(int argc, char *argv[])
 	   gettimeofday(&before,NULL);
 
 	   /* the code that you want to measure goes here; make a function call */
-	   //total_results=band_join(data, arraysize, outer, outer_size, inner_results, outer_results, result_size, bound);
+	   total_results=band_join(data, arraysize, outer, outer_size, inner_results, outer_results, result_size, bound);
      //total_results=band_join_simd(data, arraysize, outer, outer_size, inner_results, outer_results, result_size, bound);
 
 	   gettimeofday(&after,NULL);
