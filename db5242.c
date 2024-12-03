@@ -319,7 +319,6 @@ int64_t band_join(int64_t* inner, int64_t inner_size, int64_t* outer, int64_t ou
 
   */
 
-  /* YOUR CODE HERE */
 
   int64_t current_index = 0;
   int64_t extra_searches = outer_size % 4;  // Search all values of outer array using low_bin_nb_4x until less than 4 searches remain
@@ -392,8 +391,6 @@ int64_t band_join_simd(int64_t* inner, int64_t inner_size, int64_t* outer, int64
 
      This inner scanning code does not have to use SIMD.
   */
-
-      /* YOUR CODE HERE */
 
   int64_t current_index = 0;
   int64_t extra_searches = outer_size % 4;  // Search all values of outer array using low_bin_nb_4x until less than 4 searches remain
